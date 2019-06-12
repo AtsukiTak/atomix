@@ -1,0 +1,8 @@
+[package]
+name = "atomix"
+version = "0.1.0"
+authors = ["AtsukiTak <takatomgoo@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bootloader = "~0.6"
