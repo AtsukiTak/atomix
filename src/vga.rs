@@ -13,20 +13,24 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
+lazy_static! {
+    static ref WRITER: Mutex<Writer> =
+        Mutex::new(Writer::new(ColorCode::new(Color::Yellow, Color::Black)));
+}
+
 /// Write a string to the VGA buffer.
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
     use core::fmt::Write;
-    let mut writer = BottomWriter::new(ColorCode::new(Color::Yellow, Color::Black));
-    writer.write_fmt(args).unwrap();
+    WRITER.lock().write_fmt(args).unwrap();
 }
 
-struct BottomWriter {
+struct Writer {
     column_position: usize,
     color_code: ColorCode,
 }
 
-impl core::fmt::Write for BottomWriter {
+impl core::fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for byte in s.bytes() {
             match byte {
@@ -38,9 +42,9 @@ impl core::fmt::Write for BottomWriter {
     }
 }
 
-impl BottomWriter {
-    fn new(color_code: ColorCode) -> BottomWriter {
-        BottomWriter {
+impl Writer {
+    fn new(color_code: ColorCode) -> Writer {
+        Writer {
             column_position: 0,
             color_code,
         }
@@ -88,21 +92,39 @@ impl BottomWriter {
     }
 }
 
+const BUF_HEIGHT: usize = 25;
+const BUF_WIDTH: usize = 80;
+
+lazy_static! {
+    static ref VGA_BUFFER: Mutex<&'static mut [[Volatile<ScreenChar>; BUF_WIDTH]; BUF_HEIGHT]> =
+        Mutex::new(unsafe { &mut *(0xb8000 as *mut _) });
+}
+
+/// Write a character to the VGA buffer.
+pub fn write_char(screen_char: ScreenChar, row: usize, col: usize) {
+    VGA_BUFFER.lock()[row][col].write(screen_char);
+}
+
+/// Read a character from the VGA buffer.
+pub fn read_char(row: usize, col: usize) -> ScreenChar {
+    VGA_BUFFER.lock()[row][col].read()
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-struct ScreenChar {
+pub struct ScreenChar {
     ascii_char: u8,
     color_code: ColorCode,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-struct ColorCode(u8);
+pub struct ColorCode(u8);
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
-enum Color {
+pub enum Color {
     Black = 0,
     Blue = 1,
     Green = 2,
@@ -125,22 +147,4 @@ impl ColorCode {
     fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((foreground as u8) | (background as u8) << 4)
     }
-}
-
-const BUF_HEIGHT: usize = 25;
-const BUF_WIDTH: usize = 80;
-
-lazy_static! {
-    static ref VGA_BUFFER: Mutex<&'static mut [[Volatile<ScreenChar>; BUF_WIDTH]; BUF_HEIGHT]> =
-        Mutex::new(unsafe { &mut *(0xb8000 as *mut _) });
-}
-
-/// Write a character to the VGA buffer.
-fn write_char(screen_char: ScreenChar, row: usize, col: usize) {
-    VGA_BUFFER.lock()[row][col].write(screen_char);
-}
-
-/// Read a character from the VGA buffer.
-fn read_char(row: usize, col: usize) -> ScreenChar {
-    VGA_BUFFER.lock()[row][col].read()
 }
