@@ -9,3 +9,13 @@ bootloader = "~0.6"
 volatile = "~0.2"
 lazy_static = { version = "~1.0", features = ["spin_no_std"] }
 spin = "~0.4"
+x86_64 = "~0.7"
+uart_16550 = "~0.2"
+
+[package.metadata.bootimage]
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"]
+test-success-exit-code = 33
+
+[[test]]
+name = "panic_handler"
+harness = false
