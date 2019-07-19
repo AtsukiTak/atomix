@@ -156,14 +156,14 @@ mod tests {
 
     #[test_case]
     fn test_println_simple() {
-        serial_print!("test_println... ");
+        serial_print!("test_println_simple... ");
         println!("test_println_simple output");
         serial_println!("[ok]");
     }
 
     #[test_case]
     fn test_println_many() {
-        serial_print!("test_println... ");
+        serial_print!("test_println_many... ");
         for i in 0..200 {
             println!("test_println_many output : {}", i);
         }
