@@ -24,7 +24,11 @@
 //! 割り込み命令の関数はいつ呼び出されるかわからない（割り込みがいつ発生するかわからない）ので、
 //! caller-save なレジスタを規定することができない。
 //! そのため、`x86-interrupt` 呼び出し規約は、 **（グローバルな）全ての**
-//! レジスタの値を callee-saved なレジスタと規定し、スタックにpushする。
+//! レジスタの値を callee-saved なレジスタと規定する。
+//!
+//! `extern "x86-interrupt"` がつけられた関数が呼び出される前に、
+//! （たぶん）llvmによってレジスタの値がpushされ、
+//! rustcはそれを引数として関数を呼び出す。
 
 use crate::println;
 use lazy_static::lazy_static;
