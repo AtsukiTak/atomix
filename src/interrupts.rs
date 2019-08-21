@@ -1,3 +1,22 @@
+//! ## Interrupt Descriptor Table
+//! 例外をキャッチし適切に処理するために、Interrupt Descriptor Table (IDT) を設定する。
+//! IDT は複数のエントリーから構成される。
+//! それぞれのエントリーは、対応する例外（divide by zero など）の処理方法（ジャンプ先など）が記載されている。
+//! 例外が発生すると、CPU は IDT の対応するエントリーを見て、どのように処理するか判断する。
+//!
+//! IDT を設定するためには、メモリ上の任意の位置に IDT の設定を保存し、
+//! そのアドレスを `lidt` 命令で読み込む。
+//!
+//! ### 参照
+//! - https://os.phil-opp.com/cpu-exceptions/#the-interrupt-descriptor-table
+//!
+//! ### 疑問
+//! IDT のエントリーに記述されている Interrupt Stack Table Index って何？
+//! 何に使われる？
+//! →Interrupt Stack Table の指定 index にスイッチするって書いてある。
+//! →そもそも Interrupt Stack Table ってなに？
+//!
+//!
 //! ## extern "x86-interrupt"
 //! `extern` keyword は関数の呼び出し規約（calling convention）を規定する。
 //! 例えば `extern "C"` は、関数がC呼び出し規約に準ずるようにする。
@@ -35,6 +54,8 @@ use lazy_static::lazy_static;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 lazy_static! {
+    /// IDT のライフタイムは static である必要がある
+    /// lazy_static を利用して宣言された変数は、メモリの data 領域に置かれる（たぶん）
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
