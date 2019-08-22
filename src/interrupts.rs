@@ -58,8 +58,10 @@ use lazy_static::lazy_static;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 lazy_static! {
-    /// IDT のライフタイムは static である必要がある
+    /// 当たり前だが、IDT のライフタイムは static である必要がある.
+    ///
     /// lazy_static を利用して宣言された変数は、メモリの data 領域に置かれる（たぶん）
+    /// data 領域にメモリを確保して、最初の呼び出し時に初期化処理を行う（たぶん）
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
