@@ -48,6 +48,10 @@
 //! `extern "x86-interrupt"` がつけられた関数が呼び出される前に、
 //! （たぶん）llvmによってレジスタの値がpushされ、
 //! rustcはそれを引数として関数を呼び出す。
+//!
+//! ### unstable
+//! `x86-interrupt` 呼び出し規約はまだ安定化されていないので、 `#![feature(abi_x86_interrupt)]` を
+//! `lib.rs` フィアルの先頭に追加する必要がある。
 
 use crate::println;
 use lazy_static::lazy_static;
