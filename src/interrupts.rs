@@ -65,6 +65,7 @@ lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
+        idt.double_fault.set_handler_fn(double_fault_handler);
         idt
     };
 }
@@ -73,9 +74,43 @@ pub fn init_idt() {
     IDT.load();
 }
 
+/// ### 疑問
+/// breakpoint exception が起きた時はどのように対処するのが適切なんだろう。
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut InterruptStackFrame) {
     println!("EXCEPTION : BREAKPOINT");
     println!("{:#?}", stack_frame);
+}
+
+/// ## Double Fault
+/// Double Fault はどのような時に起こるか。
+/// 簡単にいうと、CPU が例外ハンドラを呼び出すのに失敗したときに起こる。
+/// ただしこれは正確な定義ではない。
+/// 正確な定義では、Double Fault は、1つめの例外の処理中に、2つめの例外が発生したときに
+/// **起こり得る。** （必ず起こる。でないことに注目）
+///
+/// 例えば、1つめの例外が Breakpoint の場合、2つめの例外が何だろうと Double Fault
+/// は発生しない。
+/// 単純に2つめの例外が処理される。
+/// もちろん、2つめの例外の処理中に3つめの例外が生じた場合は、Double Fault が起こり得る。
+///
+/// 他の例として、Divide-by-Zero 例外が発生したが、対応するハンドラが設定されていない場合を考える。
+/// この場合 Page Fault 例外が発生するが、まだ Double Fault は発生しない。
+/// Page Fault に対応するハンドラも設定されていない場合、再び Page Fault が発生し、
+/// このときは Double Fault が発生する。
+/// つまり1つめの例外が Divide-by-Zero, 2つめの例外が Page Fault の場合は Double Fault
+/// は発生しないが、
+/// 1つめの例外が Page Fault, 2つめの例外が Page Fault の場合は Double Fault が発生する。
+///
+/// より詳しい解説は以下を参照。
+/// https://os.phil-opp.com/double-fault-exceptions/#causes-of-double-faults
+///
+/// ### Note
+/// - Double Fault のエラーコードは常に0
+extern "x86-interrupt" fn double_fault_handler(
+    stack_frame: &mut InterruptStackFrame,
+    _err_code: u64,
+) {
+    panic!("EXCEPTION : DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
 #[cfg(test)]
