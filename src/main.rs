@@ -13,9 +13,11 @@ pub extern "C" fn _start() -> ! {
 
     atomix::init();
 
-    unsafe {
-        *(0xdeadbeef as *mut usize) = 42;
+    fn stack_overflow() {
+        stack_overflow();
     }
+
+    stack_overflow();
 
     #[cfg(test)]
     test_main();

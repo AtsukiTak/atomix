@@ -104,6 +104,26 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut InterruptStackFra
 /// より詳しい解説は以下を参照。
 /// https://os.phil-opp.com/double-fault-exceptions/#causes-of-double-faults
 ///
+/// ### Triple Fault
+/// Double Fault を処理している最中にまた例外が発生すると、Triple Fault が発生する。
+/// ほとんどのCPUでは、Triple Fault は強制reboot を引き起こす。
+/// Triple Fault は極力避けなければならない。
+/// そのために、Double Fault を適切に処理することが大切だが、
+/// 対応するハンドラを設定するだけでは **十分ではない** 。
+///
+/// OS上のプログラムと同様に、kernel も stack 領域を持ち、それは有限である。
+/// もし kernel がその stack 領域を使い切った場合は
+/// （stack 領域の最後のページであるguard page にヒットした場合は）
+/// Page Fault が発生する。
+/// そして CPU は Page Fault Handler を探し、その呼び出しのために
+/// stack frame を stack 領域に push しようとするが、
+/// すでに stack 領域を使い切っているので再び Page Fault が発生し、
+/// それにより Double Fault が発生する。
+/// CPU は Double Fault Handler を呼び出そうとするが、同様に Page Fault が
+/// 発生し、今度は Triple Fault が発生する。
+///
+/// この事態を避けるためには、
+///
 /// ### Note
 /// - Double Fault のエラーコードは常に0
 extern "x86-interrupt" fn double_fault_handler(

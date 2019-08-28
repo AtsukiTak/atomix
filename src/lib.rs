@@ -16,9 +16,7 @@ pub fn init() {
 #[cfg(test)]
 use core::panic::PanicInfo;
 
-/// Entry point for `cargo xtest`
-/// `cargo xtest` コマンドは、テストごとにバイナリを生成する。
-/// そのため、 `main.rs` 以外で使用するためのエントリーポイントが必要になる。
+/// Entry point for `cargo xtest --lib`
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
