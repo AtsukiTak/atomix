@@ -10,12 +10,10 @@
 //! ### 参照
 //! - https://os.phil-opp.com/cpu-exceptions/#the-interrupt-descriptor-table
 //!
-//! ### 疑問
-//! IDT のエントリーに記述されている Interrupt Stack Table Index って何？
-//! 何に使われる？
-//! →Interrupt Stack Table の指定 index にスイッチするって書いてある。
-//! →そもそも Interrupt Stack Table ってなに？
-//!
+//! ### IST
+//! IDT のエントリーに記述されている Interrupt Stack Table Index は
+//! その例外ハンドラが IST 上のどの スタック領域を使用するかを指定する。
+//! IST については `gdt` モジュールのドキュメントを参照。
 //!
 //! ## extern "x86-interrupt"
 //! `extern` keyword は関数の呼び出し規約（calling convention）を規定する。
@@ -122,7 +120,9 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut InterruptStackFra
 /// CPU は Double Fault Handler を呼び出そうとするが、同様に Page Fault が
 /// 発生し、今度は Triple Fault が発生する。
 ///
-/// この事態を避けるためには、
+/// この事態を避けるための IST という機能が x86_64 アーキテクチャには存在する。
+///
+/// IST の詳細な説明は `gdt` モジュールのドキュメントを参照。
 ///
 /// ### Note
 /// - Double Fault のエラーコードは常に0
