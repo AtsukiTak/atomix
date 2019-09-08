@@ -19,6 +19,15 @@
 //! その一つが IST である。
 //! ちなみにもう一つは Privilege Stack Table というもので、
 //! Privilege Level が変化した時に使用するスタック領域を規定する。
+//!
+//! ### TSS をロードする
+//!
+//! TSS を CPU にロードするのは、若干面倒。
+//! TSS は歴史的理由から Segmentation System を用いているため、
+//! まず新しい Segment を作ってから、そこにロードする必要がある。
+//! 具体的には、新しい Segment Descriptor を Global Descriptor Table (GDT)
+//! に追加し、その index とともに `ltr` 命令を実行し、 CPU にロードする。
+
 use crate::println;
 use lazy_static::lazy_static;
 use x86_64::{structures::tss::TaskStateSegment, VirtAddr};
