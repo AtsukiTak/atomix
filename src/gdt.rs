@@ -27,6 +27,16 @@
 //! まず新しい Segment を作ってから、そこにロードする必要がある。
 //! 具体的には、新しい Segment Descriptor を Global Descriptor Table (GDT)
 //! に追加し、その index とともに `ltr` 命令を実行し、 CPU にロードする。
+//!
+//! ## GDT
+//!
+//! Global Descriptor Table (GDT) は、Paging がまだデファクトスタンダード
+//! になっていなかった頃、プログラム同士を独立させる
+//! メモリセグメンテーションのために使われていた。
+//! セグメンテーションは 64-bit モードではもうサポートされていないが、
+//! 今でも GDT は主に２つの用途に必要である。
+//! １つは kernel 空間と user 空間をスイッチするため。
+//! そしてもう１つが、TSS をロードするためである。
 
 use crate::println;
 use lazy_static::lazy_static;
