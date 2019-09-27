@@ -3,15 +3,26 @@
 //! x86_64 アーキテクチャでは、例外発生時に事前に定義されたスタック領域に
 //! スイッチすることができる。
 //! これはハードウェアレベルで発生するため、CPU がスタックフレームを push
-//! する前に実行される。
+//! する前に実行される。(pushはソフトウェアレベル)
 //! このメカニズムを Interrupt Stack Table (IST) と呼ぶ。
 //!
 //! IST はスタック領域へのポインタを最大7つ持つテーブルである。
 //!
 //! それぞれの例外ハンドラについて、どの IST に登録されているスタック領域を
 //! 使うかを指定することができる。
+//! → IDT で指定する
 //!
 //! ### IST を作成する
+//!
+//! まず簡単に仮想的な IST を作成する手順をまとめる。
+//! 1. IST 構造体を作成する
+//! 2. 1 で作成した IST 構造体を使い、TSS 構造体を作成する。
+//!     TSS 構造体は IST 構造体を field にもつ。
+//! 3. TSS 用のセグメントを規定した GDT 構造体を作成する
+//! 4. 3 で作成した GDT 構造体を CPU にロードする
+//! 5. 3 で作成した GDT 構造体に規定されているセグメントに、TSS をロードする
+//!
+//! ## TSS
 //!
 //! IST は、レガシーなメカニズムである Task State Segment (TSS) の一部である。
 //! TSS は 64bit 環境以前では様々な情報を指定するメカニズムであったが、
@@ -37,10 +48,18 @@
 //! 今でも GDT は主に２つの用途に必要である。
 //! １つは kernel 空間と user 空間をスイッチするため。
 //! そしてもう１つが、TSS をロードするためである。
+//! GlobalDescriptorTable 構造体を作成しているコードをみるとよくわかる。
 
 use crate::println;
 use lazy_static::lazy_static;
-use x86_64::{structures::tss::TaskStateSegment, VirtAddr};
+use x86_64::{
+    structures::{
+        gdt::{Descriptor, GlobalDescriptorTable},
+        idt::InterruptStackFrame,
+        tss::TaskStateSegment,
+    },
+    VirtAddr,
+};
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
@@ -66,10 +85,17 @@ lazy_static! {
         };
         tss
     };
+
+    static ref GDT: GlobalDescriptorTable = {
+        let mut gdt = GlobalDescriptorTable::new();
+        gdt.add_entry(Descriptor::kernel_code_segment());
+        gdt.add_entry(Descriptor::tss_segment(&TSS));
+        gdt
+    };
 }
 
-pub fn init_idt() {
-    IDT.load();
+pub fn init() {
+    GDT.load();
 }
 
 extern "x86-interrupt" fn double_fault_handler(

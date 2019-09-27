@@ -11,6 +11,7 @@ pub mod test_utils;
 pub mod vga;
 
 pub fn init() {
+    gdt::init();
     interrupts::init_idt();
 }
 
