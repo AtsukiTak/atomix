@@ -68,7 +68,7 @@ use crate::println;
 use lazy_static::lazy_static;
 use x86_64::{
     structures::{
-        gdt::{Descriptor, GlobalDescriptorTable},
+        gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
         idt::InterruptStackFrame,
         tss::TaskStateSegment,
     },
@@ -82,6 +82,8 @@ lazy_static! {
         let mut tss = TaskStateSegment::new();
         tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
             const STACK_SIZE: usize = 4096;
+            // スタック領域を確保。
+            //
             // immutable な領域として宣言してしまうと、
             // bootloader はそれを read-only なページにマップしてしまう
             // かもしれないので、mutable な領域として宣言する必要がある。
@@ -100,16 +102,33 @@ lazy_static! {
         tss
     };
 
-    static ref GDT: GlobalDescriptorTable = {
+    static ref GDT: (GlobalDescriptorTable, Selectors)= {
         let mut gdt = GlobalDescriptorTable::new();
-        gdt.add_entry(Descriptor::kernel_code_segment());
-        gdt.add_entry(Descriptor::tss_segment(&TSS));
-        gdt
+        // code_selectorとtss_selectorはそれぞれ、コード領域とTSS領域が
+        // どのセグメントなのかを指す値。(GDTのインデックス)
+        let code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
+        let tss_selector = gdt.add_entry(Descriptor::tss_segment(&TSS));
+        (gdt, Selectors { code_selector, tss_selector })
     };
+}
+
+struct Selectors {
+    code_selector: SegmentSelector,
+    tss_selector: SegmentSelector,
 }
 
 pub fn init() {
     GDT.load();
+
+    unsafe {
+        // 新しいGDTをロードした後でも、code segment registerは
+        // 古い値を保持し続けているのでそれを更新してやる必要がある。
+        x86_64::instructions::segmentation::set_cs(GDT.1.code_selector);
+
+        // 新しいGDTを作成したので、CPUにそのGDT上のTSSを使うように指示する。
+        // モジュールドキュメントの仮想手順の最後のステップ。
+        x86_64::instructions::tables::load_tss(GDT.1.tss_selector);
+    }
 }
 
 extern "x86-interrupt" fn double_fault_handler(
