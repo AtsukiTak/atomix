@@ -1,0 +1,10 @@
+[package]
+name = "uefi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+uefi = { git = "https://github.com/rust-osdev/uefi-rs.git" }
+
+[profile.dev]
+panic = "abort"
