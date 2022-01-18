@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
-#![feature(abi_efiapi)]
 
-use uefi::prelude::*;
 use core::fmt::Write;
+use uefi::{
+    table::{Boot, SystemTable},
+    Handle, ResultExt as _, Status,
+};
 
-#[entry]
-fn efi_main(_handle: Handle, mut st: SystemTable<Boot>) -> Status {
+#[no_mangle]
+extern "win64" fn efi_main(_handle: Handle, mut st: SystemTable<Boot>) -> Status {
     writeln!(st.stdout(), "Hello, world!").unwrap();
 
     loop {}
