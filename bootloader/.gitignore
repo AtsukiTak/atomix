@@ -1,4 +1,5 @@
 /target
 
 /mnt/**
-!/mnt/.gitkeep
+disk.img
+OVMF_VARS.local.fd
