@@ -27,7 +27,7 @@ if [ ! -e OVMF_VARS.local.fd ]; then
 fi
 
 # qemuの実行
-ARGS="-drive if=pflash,format=raw,readonly=on,file=OVMF_CODE.fd -drive if=pflash,format=raw,file=OVMF_VARS.fd -drive format=raw,file=disk.img"
+ARGS="-drive if=pflash,format=raw,readonly=on,file=OVMF_CODE.fd -drive if=pflash,format=raw,file=OVMF_VARS.local.fd -drive format=raw,file=disk.img"
 
 if [ "$NOGRAPHIC" = "true" ]
 then
