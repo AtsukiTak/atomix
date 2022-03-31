@@ -10,6 +10,7 @@ use self::uefi::{proto::fs::SimpleFileSystemProtocol, Handle, SystemTable};
 #[no_mangle]
 extern "win64" fn efi_main(handle: Handle, table: SystemTable) -> usize {
     console::text::output::set_stdout(table.console_out());
+    console::text::output::clear();
 
     println!("Hello World");
 

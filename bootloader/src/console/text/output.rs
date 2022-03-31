@@ -29,8 +29,20 @@ pub fn _print(args: fmt::Arguments) {
     }
 }
 
+pub fn clear() {
+    if let Some(output) = &mut *STDOUT.lock() {
+        output.clear();
+    }
+}
+
 pub struct Output {
     stdout: &'static SimpleTextOutputProtocol,
+}
+
+impl Output {
+    pub fn clear(&self) {
+        self.stdout.clear_screen();
+    }
 }
 
 impl fmt::Write for Output {
