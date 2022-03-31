@@ -1,6 +1,9 @@
 pub mod proto;
 
-use self::proto::{text::SimpleTextOutputProtocol, {Protocol, Guid}};
+use self::proto::{
+    text::SimpleTextOutputProtocol,
+    {Guid, Protocol},
+};
 use core::{ffi::c_void, ptr::NonNull};
 
 #[repr(transparent)]
@@ -52,7 +55,13 @@ pub struct BootServices {
     // memory services
     allocate_pages: usize,
     free_pages: usize,
-    get_memory_map: usize,
+    get_memory_map: unsafe extern "win64" fn(
+        memory_map_size: &mut usize,
+        memory_map: *mut MemoryDescriptor,
+        map_key: &mut MapKey,
+        descriptor_size: &mut usize,
+        descriptor_version: &mut u32,
+    ) -> usize,
     allocate_pool: usize,
     free_pool: usize,
 
@@ -117,11 +126,92 @@ pub struct BootServices {
 }
 
 impl BootServices {
+    pub fn get_memory_map<'buf>(
+        &self,
+        buf: &'buf mut [u8],
+    ) -> Result<(MapKey, MemoryMapIter<'buf>), usize> {
+        let mut mem_map_size = buf.len();
+        let mem_map = buf.as_mut_ptr().cast();
+        let mut map_key = MapKey(0);
+        let mut desc_size = 0usize;
+        let mut desc_ver = 0u32;
+
+        let status = unsafe {
+            (self.get_memory_map)(
+                &mut mem_map_size,
+                mem_map,
+                &mut map_key,
+                &mut desc_size,
+                &mut desc_ver,
+            )
+        };
+
+        if status != 0 {
+            return Err(mem_map_size);
+        } else {
+            let mem_map_iter = MemoryMapIter {
+                buf,
+                desc_size,
+                index: 0,
+                len: mem_map_size / desc_size,
+            };
+            Ok((map_key, mem_map_iter))
+        }
+    }
+
     pub fn locate_protocol<P: Protocol>(&self) -> &P {
         let mut interface: *mut c_void = core::ptr::null_mut();
         unsafe {
             let _status = (self.locate_protocol)(&P::GUID, core::ptr::null(), &mut interface);
             &*interface.cast::<P>()
         }
+    }
+}
+
+#[repr(transparent)]
+pub struct MapKey(usize);
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct MemoryDescriptor {
+    typ: u32,
+    physical_start: PhysicalAddress,
+    virtual_start: VirtualAddress,
+    number_of_pages: u64,
+    attribute: u64,
+}
+
+#[repr(transparent)]
+#[derive(Debug)]
+pub struct PhysicalAddress(u64);
+
+#[repr(transparent)]
+#[derive(Debug)]
+pub struct VirtualAddress(u64);
+
+pub struct MemoryMapIter<'buf> {
+    buf: &'buf mut [u8],
+    // size of memory descriptor in bytes
+    desc_size: usize,
+    index: usize,
+    len: usize,
+}
+
+impl<'buf> Iterator for MemoryMapIter<'buf> {
+    type Item = &'buf MemoryDescriptor;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.len {
+            return None;
+        }
+
+        let desc = unsafe {
+            let ptr = self.buf.as_ptr() as usize + self.index * self.desc_size;
+            &*(ptr as *const MemoryDescriptor)
+        };
+
+        self.index += 1;
+
+        Some(desc)
     }
 }

@@ -14,20 +14,17 @@ extern "win64" fn efi_main(handle: Handle, table: SystemTable) -> usize {
 
     println!("Hello World");
 
-    // write to file
-    let sfs = table.boot().locate_protocol::<SimpleFileSystemProtocol>();
-
-    if let Some(file) = sfs
-        .open_volume()
-        .open("test", 0x8000000000000000 | 0x01 | 0x02)
-    {
-        let status = file.write("hoge");
-        println!("result of file write : {}", status);
-        file.flush();
-        println!("Success");
-    } else {
-        println!("Failed");
-    }
+    let mut buf = [0u8; 8000];
+    match table.boot().get_memory_map(&mut buf) {
+        Ok((_key, mem_map_iter)) => {
+            for mem_desc in mem_map_iter {
+                println!("{:?}", mem_desc);
+            }
+        }
+        Err(size) => {
+            println!("required memory map size : {}", size);
+        }
+    };
 
     loop {}
 }
