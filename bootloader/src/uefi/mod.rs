@@ -4,9 +4,11 @@ use self::proto::{text::SimpleTextOutputProtocol, {Protocol, Guid}};
 use core::{ffi::c_void, ptr::NonNull};
 
 #[repr(transparent)]
+#[derive(Clone, Copy)]
 pub struct Handle(NonNull<c_void>);
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub struct SystemTable {
     header: [u8; 24],
     /// Null-terminated string representing the firmware's vendor.
@@ -30,10 +32,8 @@ pub struct SystemTable {
 }
 
 impl SystemTable {
-    pub fn print(&self, text: &[u16]) {
-        unsafe {
-            (*self.console_out).output_string(text.as_ptr());
-        }
+    pub fn console_out(&self) -> &'static SimpleTextOutputProtocol {
+        unsafe { &*self.console_out }
     }
 
     pub fn boot(&self) -> &BootServices {

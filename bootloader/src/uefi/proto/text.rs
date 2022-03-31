@@ -14,7 +14,7 @@ pub struct SimpleTextOutputProtocol {
 }
 
 impl SimpleTextOutputProtocol {
-    pub fn output_string(&self, s: *const u16) -> usize {
-        unsafe { (self.output_string)(self, s) }
+    pub fn output_string(&self, string: *const u16) -> usize {
+        unsafe { (self.output_string)(self, string) }
     }
 }
