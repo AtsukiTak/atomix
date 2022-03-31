@@ -4,7 +4,7 @@ use self::proto::{
     text::SimpleTextOutputProtocol,
     {Guid, Protocol},
 };
-use core::{ffi::c_void, ptr::NonNull};
+use core::{ffi::c_void, ptr::NonNull, fmt};
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
@@ -174,20 +174,44 @@ pub struct MapKey(usize);
 #[repr(C)]
 #[derive(Debug)]
 pub struct MemoryDescriptor {
-    typ: u32,
-    physical_start: PhysicalAddress,
-    virtual_start: VirtualAddress,
-    number_of_pages: u64,
-    attribute: u64,
+    pub typ: u32,
+    pub physical_start: PhysicalAddress,
+    pub virtual_start: VirtualAddress,
+    pub number_of_pages: u64,
+    pub attribute: u64,
 }
 
 #[repr(transparent)]
 #[derive(Debug)]
 pub struct PhysicalAddress(u64);
 
+impl fmt::Display for PhysicalAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::LowerHex for PhysicalAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:x}", self.0)
+    }
+}
+
 #[repr(transparent)]
 #[derive(Debug)]
 pub struct VirtualAddress(u64);
+
+impl fmt::Display for VirtualAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::LowerHex for VirtualAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:x}", self.0)
+    }
+}
 
 pub struct MemoryMapIter<'buf> {
     buf: &'buf mut [u8],

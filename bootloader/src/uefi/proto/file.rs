@@ -1,4 +1,4 @@
-use core::ffi::c_void;
+use core::{ffi::c_void, fmt};
 
 #[repr(C)]
 pub struct FileProtocol {
@@ -30,7 +30,7 @@ pub struct FileProtocol {
 }
 
 impl FileProtocol {
-    pub fn open(&self, file_name: &str, mode: u64) -> Option<&'static FileProtocol> {
+    pub fn open(&self, file_name: &str, mode: OpenMode) -> Option<&'static FileProtocol> {
         let mut new_handle: *mut FileProtocol = core::ptr::null_mut();
 
         let mut file_name_c16 = [0u16; 32];
@@ -40,7 +40,13 @@ impl FileProtocol {
         }
 
         unsafe {
-            (self.open)(self, &mut new_handle, file_name_c16.as_ptr(), mode, 0);
+            (self.open)(
+                self,
+                &mut new_handle,
+                file_name_c16.as_ptr(),
+                mode as u64,
+                0,
+            );
             if new_handle.is_null() {
                 return None;
             } else {
@@ -59,4 +65,25 @@ impl FileProtocol {
     pub fn flush(&self) -> usize {
         unsafe { (self.flush)(self) }
     }
+}
+
+impl fmt::Write for FileProtocol {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write(s);
+        Ok(())
+    }
+}
+
+impl fmt::Write for &FileProtocol {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write(s);
+        Ok(())
+    }
+}
+
+#[repr(u64)]
+pub enum OpenMode {
+    Read = 0x01,
+    ReadWrite = 0x01 | 0x02,
+    CreateReadWrite = (1 << 63) | 0x01 | 0x02,
 }
